@@ -1,0 +1,17 @@
+# Amazon Associates API
+AMAZON_ACCESS_KEY=your_amazon_access_key
+AMAZON_SECRET_KEY=your_amazon_secret_key
+AMAZON_ASSOCIATE_TAG=your_associate_tag
+AMAZON_REGION=US
+
+# AliExpress Affiliate API
+ALIEXPRESS_APP_KEY=your_aliexpress_app_key
+ALIEXPRESS_APP_SECRET=your_aliexpress_app_secret
+
+# Video Settings
+OUTPUT_DIR=output_videos
+TEMP_DIR=temp_files
+
+# Language Settings
+LANGUAGE=he
+TTS_LANGUAGE=he
