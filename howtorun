@@ -1,0 +1,4 @@
+run link on amazon
+
+python main.py --url "https://amzn.to/49RStw3" --store amazon
+
