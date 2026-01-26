@@ -114,6 +114,9 @@ def main():
   
   # יצירת סרטונים מ-AliExpress
   python main.py --keywords "שעון חכם" --store aliexpress --count 5
+  
+  # יצירת סרטונים מ-eBay
+  python main.py --keywords "מצלמה" --store ebay --count 3
         """
     )
     
@@ -133,7 +136,7 @@ def main():
         '--store',
         type=str,
         default='amazon',
-        choices=['amazon', 'aliexpress'],
+        choices=['amazon', 'aliexpress', 'ebay'],
         help='חנות שותפים (default: amazon)'
     )
     

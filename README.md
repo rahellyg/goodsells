@@ -76,22 +76,31 @@ python main.py --keywords "טלפון חכם" --store amazon --count 3
 python main.py --keywords "שעון חכם" --store aliexpress --count 5
 ```
 
-### יצירת סרטון ממוצר בודד
+### יצירת סרטון ממוצר בודד (מומלץ!)
 
 ```bash
-# מ-URL של Amazon
+# מ-URL של Amazon - פשוט העתק את הקישור מהדפדפן
+python main.py --url "https://www.amazon.com/dp/B08N5WRWNW" --store amazon
+
+# דוגמאות נוספות:
 python main.py --url "https://amazon.com/dp/B08N5WRWNW" --store amazon
+python main.py --url "https://www.amazon.com/gp/product/B08N5WRWNW" --store amazon
 
 # מ-URL של AliExpress
 python main.py --url "https://aliexpress.com/item/1234567890.html" --store aliexpress
+
+# מ-URL של eBay
+python main.py --url "https://www.ebay.com/itm/123456789" --store ebay
 ```
+
+**💡 טיפ:** פשוט העתק את הקישור של המוצר מ-Amazon והדבק אחרי `--url`!
 
 ### פרמטרים
 
-- `--keywords`: מילות מפתח לחיפוש מוצרים
-- `--url`: URL של מוצר ספציפי
-- `--store`: חנות שותפים (`amazon` או `aliexpress`)
-- `--count`: מספר מוצרים ליצירה (ברירת מחדל: 5)
+- `--keywords`: מילות מפתח לחיפוש מוצרים (לא דורש API key, אבל משתמש בנתוני דמה)
+- `--url`: **URL של מוצר ספציפי** - מומלץ! פשוט העתק קישור מ-Amazon (לא דורש API key)
+- `--store`: חנות שותפים (`amazon`, `aliexpress`, או `ebay`) - ברירת מחדל: `amazon`
+- `--count`: מספר מוצרים ליצירה (ברירת מחדל: 5) - רק עם `--keywords`
 
 ## מבנה הפרויקט 📁
 
