@@ -5,9 +5,8 @@ Main Script for Automated Marketing Video Creation
 # -*- coding: utf-8 -*-
 import os
 import sys
-import io
 
-# Set UTF-8 encoding for Windows console
+# Set UTF-8 encoding for Windows
 if sys.platform == 'win32':
     try:
         # Try to set console to UTF-8
@@ -33,7 +32,7 @@ load_dotenv()
 
 def create_videos_from_keywords(keywords: str, store: str = 'amazon', count: int = 5):
     """יצירת סרטונים ממילות מפתח"""
-    print(f"[SEARCH] Searching for products: '{keywords}' on {store}")
+    print(f"🔍 Searching for products: '{keywords}' on {store}")
     
     # משיכת מוצרים
     fetcher = get_fetcher(store)
@@ -76,7 +75,7 @@ def create_videos_from_keywords(keywords: str, store: str = 'amazon', count: int
 
 def create_video_from_url(product_url: str, store: str = 'amazon'):
     """יצירת סרטון ממוצר בודד לפי URL"""
-    print(f"[FETCH] Fetching product from URL: {product_url}")
+    print(f"🔗 Fetching product from URL: {product_url}")
     
     # משיכת מוצר
     fetcher = get_fetcher(store)
@@ -114,9 +113,6 @@ def main():
   
   # יצירת סרטונים מ-AliExpress
   python main.py --keywords "שעון חכם" --store aliexpress --count 5
-  
-  # יצירת סרטונים מ-eBay
-  python main.py --keywords "מצלמה" --store ebay --count 3
         """
     )
     
@@ -136,7 +132,7 @@ def main():
         '--store',
         type=str,
         default='amazon',
-        choices=['amazon', 'aliexpress', 'ebay'],
+        choices=['amazon', 'aliexpress'],
         help='חנות שותפים (default: amazon)'
     )
     

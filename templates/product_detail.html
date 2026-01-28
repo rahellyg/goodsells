@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>פרטי מוצר - Amazon Affiliate</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Amazon Products</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/">בית</a></li>
+                <li><a href="/products">מוצרים</a></li>
+                <li><a href="/manage">ניהול מוצרים</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div id="productDetail" class="product-detail">
+                <div class="loading" id="loading">
+                    <i class="fas fa-spinner fa-spin"></i> טוען פרטי מוצר...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Amazon Affiliate Showcase. כל הזכויות שמורות.</p>
+        </div>
+    </footer>
+
+    <script>
+        const asin = '{{ asin }}';
+    </script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/product_detail.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Affiliate Product Showcase</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Amazon Products</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/" class="active">בית</a></li>
+                <li><a href="/products">מוצרים</a></li>
+                <li><a href="/manage">ניהול מוצרים</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <section class="hero">
+            <div class="container">
+                <h1>גלה מוצרים מומלצים מ-Amazon</h1>
+                <p>צפה בסרטוני שיווק קצרים וקנה ישירות דרך קישורי השותפים שלנו</p>
+                
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="חפש מוצרים... (לדוגמה: טלפון חכם, מצלמה)">
+                    <button onclick="searchProducts()" class="btn btn-primary">
+                        <i class="fas fa-search"></i> חפש
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="container">
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <i class="fas fa-video"></i>
+                        <h3>סרטוני שיווק</h3>
+                        <p>סרטונים קצרים של 8 שניות לכל מוצר</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-tag"></i>
+                        <h3>מחירים מעודכנים</h3>
+                        <p>מחירים והנחות מעודכנים בזמן אמת</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-star"></i>
+                        <h3>ביקורות ודירוגים</h3>
+                        <p>צפה בדירוגים וביקורות של לקוחות</p>
+                    </div>
+                    <div class="feature-card">
+                        <i class="fas fa-link"></i>
+                        <h3>קישורי שותפים</h3>
+                        <p>קנה ישירות דרך קישורי השותפים שלנו</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="products-section" id="productsSection" style="display: none;">
+            <div class="container">
+                <h2><i class="fas fa-search"></i> תוצאות חיפוש</h2>
+                <div class="loading" id="loading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> טוען מוצרים...
+                </div>
+                <div class="products-grid" id="productsGrid">
+                    <!-- Products will be loaded here -->
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Amazon Affiliate Showcase. כל הזכויות שמורות.</p>
+            <p class="disclaimer">
+                <small>האתר משתמש בקישורי שותפים של Amazon. רכישות דרך הקישורים תומכות באתר.</small>
+            </p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

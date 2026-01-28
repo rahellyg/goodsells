@@ -10,6 +10,7 @@
 - ✅ תמיכה בעברית מלאה
 - ✅ אנימציות וטקסטים דינמיים
 - ✅ הצגת מחירים, הנחות ודירוגים
+- ✅ תמיכה בקישורי VDP (Video Detail Page) של Amazon
 
 ## התקנה 📦
 
@@ -95,12 +96,31 @@ python main.py --url "https://www.ebay.com/itm/123456789" --store ebay
 
 **💡 טיפ:** פשוט העתק את הקישור של המוצר מ-Amazon והדבק אחרי `--url`!
 
+### יצירת סרטונים מכל המוצרים בקטגוריה 🆕
+
+```bash
+# יצירת סרטונים מכל המוצרים בדף קטגוריה (מוצרים פופולריים, חדשים, וכו')
+python main.py --url "https://www.amazon.com/gp/movers-and-shakers" --store amazon --max-products 10
+
+# דוגמאות נוספות:
+python main.py --url "https://www.amazon.com/gp/bestsellers" --store amazon --max-products 20
+python main.py --url "https://www.amazon.com/gp/new-releases" --store amazon --max-products 15
+
+# עם קישור קצר של קטגוריה
+python main.py --url "https://amzn.to/XXXXX" --store amazon --max-products 5
+```
+
+**✨ תכונה חדשה:** המערכת מזהה אוטומטית אם הקישור הוא דף קטגוריה ומחלצת את כל המוצרים!
+
 ### פרמטרים
 
 - `--keywords`: מילות מפתח לחיפוש מוצרים (לא דורש API key, אבל משתמש בנתוני דמה)
-- `--url`: **URL של מוצר ספציפי** - מומלץ! פשוט העתק קישור מ-Amazon (לא דורש API key)
+- `--url`: **URL של מוצר ספציפי או קטגוריה** - מומלץ! פשוט העתק קישור מ-Amazon (לא דורש API key)
+  - אם זה דף מוצר: יוצר סרטון אחד
+  - אם זה דף קטגוריה: יוצר סרטונים לכל המוצרים בקטגוריה!
 - `--store`: חנות שותפים (`amazon`, `aliexpress`, או `ebay`) - ברירת מחדל: `amazon`
 - `--count`: מספר מוצרים ליצירה (ברירת מחדל: 5) - רק עם `--keywords`
+- `--max-products`: מספר מקסימלי של מוצרים מדף קטגוריה (ברירת מחדל: 20) - רק עם `--url` של קטגוריה
 
 ## מבנה הפרויקט 📁
 
@@ -131,6 +151,7 @@ sells/
 אם אתה מקבל שגיאה הקשורה ל-FFmpeg:
 - ודא ש-FFmpeg מותקן וזמין ב-PATH
 - נסה להריץ: `ffmpeg -version` בטרמינל
+
 
 ### בעיות עם פונטים עבריים
 המערכת מנסה להשתמש בפונטים עבריים מהמערכת. אם הטקסט לא מוצג נכון:

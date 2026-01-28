@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>שגיאה</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-shopping-bag"></i>
+                <span>Amazon Products</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/">בית</a></li>
+                <li><a href="/products">מוצרים</a></li>
+                <li><a href="/manage">ניהול מוצרים</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div style="text-align: center; padding: 3rem;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 4rem; color: #dc3545; margin-bottom: 1rem;"></i>
+                <h1>שגיאה</h1>
+                <p style="font-size: 1.2rem; color: #666; margin-top: 1rem;">{{ message }}</p>
+                <a href="/" class="btn btn-primary" style="margin-top: 2rem;">
+                    <i class="fas fa-home"></i> חזור לדף הבית
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 Amazon Affiliate Showcase. כל הזכויות שמורות.</p>
+        </div>
+    </footer>
+</body>
+</html>
