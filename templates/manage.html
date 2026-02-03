@@ -82,7 +82,8 @@
             <ul class="nav-menu">
                 <li><a href="/">בית</a></li>
                 <li><a href="/products">מוצרים</a></li>
-                <li><a href="/manage" class="active">ניהול מוצרים</a></li>
+                <li><a href="/featured">מומלצים</a></li>
+                <li><a href="/manage" class="active">ניהול</a></li>
             </ul>
         </div>
     </nav>
@@ -255,14 +256,17 @@
                         </div>
                         
                         <div style="margin-bottom: 1rem;">
-                            <label><strong>מחיר (מאמזון):</strong></label>
-                            <input type="text" id="editProductPrice" placeholder="$29.99" readonly style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 5px; margin-top: 0.5rem; background: #f5f5f5; cursor: not-allowed;">
-                            <small style="color: #666; display: block; margin-top: 0.25rem;">המחיר המקורי של אמזון (לא ניתן לעריכה)</small>
+                            <label><strong>מחיר נוכחי:</strong></label>
+                            <input type="text" id="editProductPrice" placeholder="$29.99" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 5px; margin-top: 0.5rem;">
+                            <small style="color: #FF6A00; display: block; margin-top: 0.25rem;">
+                                <i class="fas fa-info-circle"></i> עבור מוצרי AliExpress - הזן מחיר ידנית (המחיר אינו נמשך אוטומטית)
+                            </small>
                         </div>
                         
                         <div style="margin-bottom: 1rem;">
                             <label><strong>מחיר מקורי:</strong></label>
                             <input type="text" id="editProductOriginalPrice" placeholder="$39.99" style="width: 100%; padding: 0.75rem; border: 2px solid #ddd; border-radius: 5px; margin-top: 0.5rem;">
+                            <small style="color: #666; display: block; margin-top: 0.25rem;">מחיר לפני הנחה (אופציונלי)</small>
                         </div>
                         
                         <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Affiliate Callback URLs - Configuration</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .config-container {
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        .url-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #FF6B35;
+        }
+        .url-box h3 {
+            margin-top: 0;
+            color: #333;
+            font-size: 18px;
+        }
+        .url-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            background: white;
+            margin-top: 10px;
+        }
+        .copy-btn {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        .copy-btn:hover {
+            background: #ff5722;
+        }
+        .copy-btn.copied {
+            background: #4CAF50;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #2196F3;
+        }
+        .warning {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .step {
+            margin: 15px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .step:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #FF6B35;
+            font-size: 20px;
+        }
+        code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="config-container">
+        <h1>🔗 Affiliate Callback URLs Configuration</h1>
+        
+        <div class="instructions">
+            <h2>📋 Instructions</h2>
+            <p>Use these URLs when configuring your affiliate programs:</p>
+        </div>
+
+        <div class="url-box">
+            <h3>🛒 AliExpress Callback URL</h3>
+            <p>Use this URL in your AliExpress affiliate app settings:</p>
+            <input type="text" class="url-input" id="aliexpress-callback" readonly>
+            <button class="copy-btn" onclick="copyUrl('aliexpress-callback')">📋 Copy URL</button>
+        </div>
+
+        <div class="url-box">
+            <h3>🔔 AliExpress Webhook URL</h3>
+            <p>Use this URL for order notifications and webhooks:</p>
+            <input type="text" class="url-input" id="aliexpress-webhook" readonly>
+            <button class="copy-btn" onclick="copyUrl('aliexpress-webhook')">📋 Copy URL</button>
+        </div>
+
+        <div class="warning" id="local-warning" style="display: none;">
+            <h3>⚠️ Local Development Detected</h3>
+            <p>You're running on localhost. For testing with real AliExpress callbacks, you need a public URL.</p>
+            <div class="step">
+                <strong>Option 1: Use ngrok</strong><br>
+                Run: <code>ngrok http 5000</code><br>
+                Then use the https URL provided by ngrok
+            </div>
+            <div class="step">
+                <strong>Option 2: Deploy to production</strong><br>
+                Deploy to Render, Railway, Heroku, or any cloud platform
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>🔧 How to Configure AliExpress</h3>
+            <div class="step">Go to <a href="https://portals.aliexpress.com/" target="_blank">AliExpress Affiliate Portal</a></div>
+            <div class="step">Navigate to your app settings</div>
+            <div class="step">Find the "Callback URL" or "Webhook URL" field</div>
+            <div class="step">Paste the callback URL from above</div>
+            <div class="step">Save and test the configuration</div>
+        </div>
+
+        <div class="instructions">
+            <h3>📊 Testing the Callback</h3>
+            <p>To test if your callback is working:</p>
+            <div class="step">Make a test API call from AliExpress dashboard</div>
+            <div class="step">Check your server logs for callback data</div>
+            <div class="step">Look for <code>[ALIEXPRESS CALLBACK]</code> messages</div>
+        </div>
+
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="/" style="color: #FF6B35; text-decoration: none; font-size: 16px;">← Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+        // Fetch callback URLs from API
+        fetch('/api/config/callback-url')
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('aliexpress-callback').value = data.aliexpress.callback;
+                document.getElementById('aliexpress-webhook').value = data.aliexpress.webhook;
+                
+                if (data.is_local) {
+                    document.getElementById('local-warning').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching callback URLs:', error);
+            });
+
+        function copyUrl(elementId) {
+            const input = document.getElementById(elementId);
+            input.select();
+            document.execCommand('copy');
+            
+            // Visual feedback
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✓ Copied!';
+            btn.classList.add('copied');
+            
+            setTimeout(() => {
+                btn.textContent = originalText;
+                btn.classList.remove('copied');
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

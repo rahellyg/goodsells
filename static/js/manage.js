@@ -104,29 +104,48 @@ function createProductCard(product, showRemove = false) {
     return card;
 }
 
-// Extract ASIN from product
-function extractASIN(product) {
-    // Try multiple sources for ASIN
+// Extract product ID (ASIN for Amazon, item ID for AliExpress, etc.)
+function extractProductId(product) {
+    // Try ASIN first (Amazon)
     if (product.asin) {
         return product.asin;
     }
     
     const url = product.affiliate_url || product.url || '';
     if (url) {
-        // Try /dp/ pattern
+        // Amazon patterns
         let match = url.match(/\/dp\/([A-Z0-9]{10})/);
         if (match) return match[1];
         
-        // Try /gp/product/ pattern
         match = url.match(/\/gp\/product\/([A-Z0-9]{10})/);
         if (match) return match[1];
         
-        // Try ?product= pattern (VDP links)
         match = url.match(/[?&]product=([A-Z0-9]{10})/);
         if (match) return match[1];
+        
+        // AliExpress patterns
+        match = url.match(/\/item\/(\d+)\.html/);
+        if (match) return 'ALI_' + match[1];
+        
+        match = url.match(/\/item\/(\d+)/);
+        if (match) return 'ALI_' + match[1];
+        
+        // AliExpress short link pattern
+        match = url.match(/\/e\/([a-zA-Z0-9_]+)/);
+        if (match) return 'ALI_' + match[1];
+    }
+    
+    // Fallback: generate ID from title
+    if (product.title) {
+        return 'PROD_' + product.title.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '');
     }
     
     return '';
+}
+
+// Keep extractASIN for backward compatibility
+function extractASIN(product) {
+    return extractProductId(product);
 }
 
 // Make functions globally accessible
@@ -409,16 +428,16 @@ function openEditModal(product) {
         return;
     }
     
-    // Try to extract ASIN from multiple sources
-    let asin = product.asin || extractASIN(product);
+    // Try to extract product ID from multiple sources
+    let productId = product.asin || extractProductId(product);
     
-    if (!asin) {
-        console.error('No ASIN found for product:', product);
-        alert('לא ניתן לערוך מוצר ללא ASIN. אנא הוסף קישור Amazon למוצר.');
+    if (!productId) {
+        console.error('No product ID found for product:', product);
+        alert('לא ניתן לערוך מוצר ללא מזהה. אנא ודא שיש קישור למוצר.');
         return;
     }
     
-    console.log('Product ASIN:', asin);
+    console.log('Product ID:', productId);
     
     // Fill form with product data
     const asinInput = document.getElementById('editProductASIN');
@@ -435,7 +454,7 @@ function openEditModal(product) {
         return;
     }
     
-    asinInput.value = asin;
+    asinInput.value = productId;
     titleInput.value = product.title || '';
     descInput.value = product.description || product.custom_description || '';
     

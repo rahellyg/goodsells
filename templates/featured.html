@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>מוצרים מומלצים - GoodSells</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <i class="fas fa-shopping-bag"></i>
+                <span>GoodSells</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/">בית</a></li>
+                <li><a href="/products">מוצרים</a></li>
+                <li><a href="/featured" class="active">מומלצים</a></li>
+                <li><a href="/manage">ניהול</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 3rem 0; margin-bottom: 3rem;">
+            <div class="container" style="text-align: center;">
+                <i class="fas fa-star" style="font-size: 3rem; margin-bottom: 1rem; color: #ffd700;"></i>
+                <h1 style="font-size: 2.5rem; margin-bottom: 1rem;">המוצרים המומלצים שלנו</h1>
+                <p style="font-size: 1.2rem; opacity: 0.9;">מבחר המוצרים הטובים ביותר עם המחירים הכי משתלמים</p>
+            </div>
+        </section>
+
+        <section class="featured-section">
+            <div class="container">
+                <!-- Smart Agent Section -->
+                <div class="smart-agent-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 10px; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
+                        <div>
+                            <h2 style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-robot"></i> סוכן חכם למוצרים מומלצים
+                            </h2>
+                            <p style="margin: 0; opacity: 0.9;">הסוכן שלנו ימצא עבורך מוצרים עם עמלות מעולות ומחירים משתלמים</p>
+                        </div>
+                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                            <select id="categorySelect" style="padding: 0.75rem 1rem; border-radius: 5px; border: none; font-size: 1rem;">
+                                <option value="electronics">אלקטרוניקה</option>
+                                <option value="fashion">אופנה ואקססוריז</option>
+                                <option value="home">בית ומטבח</option>
+                                <option value="sports">ספורט וכושר</option>
+                                <option value="beauty">יופי וטיפוח</option>
+                                <option value="toys">צעצועים ומשחקים</option>
+                            </select>
+                            <button onclick="loadSmartRecommendations()" class="btn" style="background: white; color: #667eea; padding: 0.75rem 1.5rem; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
+                                <i class="fas fa-magic"></i> מצא מוצרים מומלצים
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filter Options -->
+                <div class="filter-section" style="background: #f8f9fa; padding: 2rem; border-radius: 10px; margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2 style="margin: 0;">
+                            <i class="fas fa-filter"></i> סינון מוצרים
+                        </h2>
+                        <button onclick="loadFeaturedProducts()" class="btn" style="background: #667eea; color: white; padding: 0.5rem 1rem; border: none; border-radius: 5px; cursor: pointer;">
+                            <i class="fas fa-sync-alt"></i> טען מוצרים שמורים
+                        </button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                                <i class="fas fa-store"></i> חנות:
+                            </label>
+                            <select id="storeFilter" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 5px; border: 1px solid #ddd;">
+                                <option value="all">כל החנויות</option>
+                                <option value="amazon">Amazon</option>
+                                <option value="aliexpress">AliExpress</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                                <i class="fas fa-sort-amount-down"></i> מיון לפי:
+                            </label>
+                            <select id="sortFilter" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 5px; border: 1px solid #ddd;">
+                                <option value="price-low">מחיר: נמוך לגבוה</option>
+                                <option value="price-high">מחיר: גבוה לנמוך</option>
+                                <option value="rating">דירוג</option>
+                                <option value="discount">הנחה</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; font-weight: bold;">
+                                <i class="fas fa-tags"></i> טווח מחיר:
+                            </label>
+                            <select id="priceFilter" class="form-control" style="width: 100%; padding: 0.5rem; border-radius: 5px; border: 1px solid #ddd;">
+                                <option value="all">הכל</option>
+                                <option value="0-20">$0 - $20</option>
+                                <option value="20-50">$20 - $50</option>
+                                <option value="50-100">$50 - $100</option>
+                                <option value="100+">$100+</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Section -->
+                <div class="stats-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+                    <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;">
+                        <i class="fas fa-box" style="font-size: 2rem; color: #667eea; margin-bottom: 0.5rem;"></i>
+                        <h3 id="totalProducts" style="font-size: 2rem; margin: 0.5rem 0;">0</h3>
+                        <p style="color: #666; margin: 0;">סה"כ מוצרים</p>
+                    </div>
+                    <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;">
+                        <i class="fas fa-percent" style="font-size: 2rem; color: #f093fb; margin-bottom: 0.5rem;"></i>
+                        <h3 id="avgDiscount" style="font-size: 2rem; margin: 0.5rem 0;">0%</h3>
+                        <p style="color: #666; margin: 0;">הנחה ממוצעת</p>
+                    </div>
+                    <div class="stat-card" style="background: white; padding: 1.5rem; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); text-align: center;">
+                        <i class="fas fa-star" style="font-size: 2rem; color: #ffd700; margin-bottom: 0.5rem;"></i>
+                        <h3 id="avgRating" style="font-size: 2rem; margin: 0.5rem 0;">0</h3>
+                        <p style="color: #666; margin: 0;">דירוג ממוצע</p>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div class="loading" id="loading" style="display: none; text-align: center; padding: 3rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #667eea;"></i>
+                    <p style="margin-top: 1rem; font-size: 1.2rem;">טוען מוצרים מומלצים...</p>
+                </div>
+
+                <!-- Products Grid -->
+                <div class="products-grid" id="featuredProductsGrid">
+                    <!-- Products will be loaded here by JavaScript -->
+                </div>
+
+                <!-- No Products Message -->
+                <div id="noProducts" style="display: none; text-align: center; padding: 3rem; color: #999;">
+                    <i class="fas fa-inbox" style="font-size: 4rem; margin-bottom: 1rem;"></i>
+                    <h3>אין עדיין מוצרים מומלצים</h3>
+                    <p>הוסף מוצרים דרך <a href="/manage" style="color: #667eea;">דף הניהול</a></p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 GoodSells. כל הזכויות שמורות.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/featured.js') }}"></script>
+</body>
+</html>

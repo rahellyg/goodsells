@@ -70,6 +70,18 @@ def manage_products():
     return render_template('manage.html')
 
 
+@app.route('/featured')
+def featured_products():
+    """Featured products page - מוצרים מומלצים"""
+    return render_template('featured.html')
+
+
+@app.route('/callback-config')
+def callback_config():
+    """Affiliate callback configuration page"""
+    return render_template('callback_config.html')
+
+
 @app.route('/product/<asin>')
 def product_detail(asin):
     """Product detail page"""
@@ -88,7 +100,17 @@ def search_products():
         if not keywords:
             return jsonify({'error': 'Keywords required'}), 400
         
-        fetcher = get_fetcher(store)
+        print(f"[API] Searching {store} for: {keywords}")
+        
+        try:
+            fetcher = get_fetcher(store)
+        except Exception as fetcher_error:
+            print(f"[API] Error creating fetcher for {store}: {fetcher_error}")
+            return jsonify({
+                'error': f'Store "{store}" is not available: {str(fetcher_error)}',
+                'store': store
+            }), 400
+        
         products = fetcher.search_products(keywords, max_results=count)
         
         return jsonify({
@@ -97,6 +119,9 @@ def search_products():
             'count': len(products)
         })
     except Exception as e:
+        print(f"[API] Error in search_products: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 
@@ -283,6 +308,108 @@ def get_category_products():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/products/recommended', methods=['POST'])
+def get_recommended_products():
+    """Get smart recommended products with good commissions from AliExpress"""
+    try:
+        data = request.json or {}
+        category = data.get('category', 'electronics')
+        count = min(int(data.get('count', 20)), 50)
+        
+        print(f"[SMART AGENT] Searching for recommended {category} products...")
+        
+        # Keywords for different categories with high commission potential
+        category_keywords = {
+            'electronics': ['wireless earbuds', 'smart watch', 'phone accessories', 'bluetooth speaker'],
+            'fashion': ['sunglasses', 'jewelry', 'watch', 'bag'],
+            'home': ['led lights', 'kitchen gadgets', 'home decor', 'organizer'],
+            'sports': ['fitness tracker', 'yoga mat', 'sports bottle', 'resistance bands'],
+            'beauty': ['makeup brush', 'skincare', 'hair accessories', 'nail art'],
+            'toys': ['educational toys', 'puzzle', 'building blocks', 'remote control'],
+        }
+        
+        keywords_list = category_keywords.get(category, ['popular items', 'trending', 'best seller'])
+        
+        # Use AliExpress API to get products
+        try:
+            fetcher = get_fetcher('aliexpress')
+            all_products = []
+            
+            # Search multiple keywords to get variety
+            for keyword in keywords_list[:2]:  # Limit to 2 keywords to avoid API limits
+                print(f"[SMART AGENT] Searching: {keyword}")
+                products = fetcher.search_products(keyword, max_results=count // 2)
+                all_products.extend(products)
+            
+            # Smart filtering: prefer products with good metrics
+            scored_products = []
+            for product in all_products:
+                score = 0
+                
+                # Get price
+                price_str = product.get('price', '$0')
+                try:
+                    price = float(price_str.replace('$', '').replace(',', ''))
+                except:
+                    price = 0
+                
+                # Scoring logic for commission potential
+                # 1. Price range (sweet spot: $10-$100)
+                if 10 <= price <= 100:
+                    score += 30
+                elif 5 <= price < 10 or 100 < price <= 200:
+                    score += 20
+                elif price > 200:
+                    score += 10
+                
+                # 2. Discount (higher discount = better deal)
+                discount_str = product.get('discount', '0%')
+                try:
+                    discount = int(discount_str.replace('%', ''))
+                    score += min(discount, 40)  # Max 40 points for discount
+                except:
+                    pass
+                
+                # 3. Has image (quality indicator)
+                if product.get('image_url'):
+                    score += 10
+                
+                # 4. Has original price (shows deal)
+                if product.get('original_price'):
+                    score += 10
+                
+                scored_products.append({
+                    'product': product,
+                    'score': score
+                })
+            
+            # Sort by score
+            scored_products.sort(key=lambda x: x['score'], reverse=True)
+            
+            # Return top products
+            recommended = [item['product'] for item in scored_products[:count]]
+            
+            print(f"[SMART AGENT] Found {len(recommended)} recommended products")
+            
+            return jsonify({
+                'success': True,
+                'products': recommended,
+                'count': len(recommended),
+                'category': category
+            })
+            
+        except Exception as api_error:
+            print(f"[SMART AGENT] API Error: {api_error}")
+            return jsonify({
+                'error': f'Could not fetch recommended products: {str(api_error)}',
+                'success': False
+            }), 500
+            
+    except Exception as e:
+        print(f"[SMART AGENT] Error: {e}")
+        return jsonify({'error': str(e), 'success': False}), 500
 
 
 # Product Management API
@@ -606,6 +733,122 @@ def translate_text():
             'error': 'Translation service unavailable. Please enter Hebrew description manually.',
             'message': 'אנא הזן תיאור בעברית ידנית'
         }), 503
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/aliexpress/callback', methods=['GET', 'POST'])
+def aliexpress_callback():
+    """
+    AliExpress Affiliate API Callback Endpoint
+    
+    This endpoint receives callbacks from AliExpress affiliate system.
+    Use this URL in your AliExpress affiliate app configuration.
+    
+    URL Format: https://yourdomain.com/api/aliexpress/callback
+    """
+    try:
+        # Log the callback for debugging
+        print("[ALIEXPRESS CALLBACK] Received callback from AliExpress")
+        
+        if request.method == 'POST':
+            data = request.json or request.form.to_dict()
+            print(f"[CALLBACK DATA] {data}")
+        else:  # GET
+            data = request.args.to_dict()
+            print(f"[CALLBACK PARAMS] {data}")
+        
+        # Extract common AliExpress callback parameters
+        order_id = data.get('order_id') or data.get('orderId')
+        commission = data.get('commission')
+        status = data.get('status')
+        
+        # Store or process the callback data as needed
+        callback_log = {
+            'timestamp': time.time(),
+            'method': request.method,
+            'data': data,
+            'order_id': order_id,
+            'commission': commission,
+            'status': status
+        }
+        
+        # You can save this to a database or file
+        print(f"[CALLBACK LOG] {callback_log}")
+        
+        return jsonify({
+            'success': True,
+            'message': 'Callback received successfully',
+            'callback_id': str(int(time.time()))
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] AliExpress callback error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/aliexpress/webhook', methods=['POST'])
+def aliexpress_webhook():
+    """
+    AliExpress Webhook Endpoint for order notifications
+    
+    URL Format: https://yourdomain.com/api/aliexpress/webhook
+    """
+    try:
+        data = request.json or {}
+        
+        print("[ALIEXPRESS WEBHOOK] Received webhook")
+        print(f"[WEBHOOK DATA] {data}")
+        
+        # Process webhook data
+        event_type = data.get('event_type') or data.get('type')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Webhook processed',
+            'event_type': event_type
+        }), 200
+        
+    except Exception as e:
+        print(f"[ERROR] Webhook error: {e}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+
+@app.route('/api/config/callback-url', methods=['GET'])
+def get_callback_url():
+    """
+    Get the callback URLs for affiliate programs
+    
+    Returns the full callback URLs based on the current domain
+    """
+    try:
+        # Get the base URL from the request
+        base_url = request.url_root.rstrip('/')
+        
+        # If running locally, provide ngrok instructions
+        is_local = 'localhost' in base_url or '127.0.0.1' in base_url
+        
+        callback_urls = {
+            'aliexpress': {
+                'callback': f"{base_url}/api/aliexpress/callback",
+                'webhook': f"{base_url}/api/aliexpress/webhook"
+            },
+            'base_url': base_url,
+            'is_local': is_local
+        }
+        
+        if is_local:
+            callback_urls['note'] = 'You are running locally. For testing with real callbacks, use ngrok or deploy to a public server.'
+            callback_urls['ngrok_example'] = 'Run: ngrok http 5000, then use the https URL provided'
+        
+        return jsonify(callback_urls), 200
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500

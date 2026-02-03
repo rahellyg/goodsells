@@ -121,92 +121,144 @@ function createProductCard(product) {
     return card;
 }
 
-// Extract ASIN from product
+// Extract product ID (ASIN for Amazon, item ID for AliExpress, etc.)
 function extractASIN(product) {
+    // Try ASIN first (Amazon)
+    if (product.asin) {
+        return product.asin;
+    }
+    
     const url = product.affiliate_url || '';
-    const match = url.match(/\/dp\/([A-Z0-9]{10})/);
-    return match ? match[1] : '';
+    if (url) {
+        // Amazon patterns
+        let match = url.match(/\/dp\/([A-Z0-9]{10})/);
+        if (match) return match[1];
+        
+        // AliExpress patterns
+        match = url.match(/\/item\/(\d+)\.html/);
+        if (match) return 'ALI_' + match[1];
+        
+        match = url.match(/\/item\/(\d+)/);
+        if (match) return 'ALI_' + match[1];
+        
+        // AliExpress short link
+        match = url.match(/\/e\/([a-zA-Z0-9_]+)/);
+        if (match) return 'ALI_' + match[1];
+    }
+    
+    // Fallback: generate ID from title
+    if (product.title) {
+        return 'PROD_' + product.title.substring(0, 20).replace(/[^a-zA-Z0-9]/g, '');
+    }
+    
+    return '';
 }
 
 // Search products function
+// Search products through AliExpress
 async function searchProducts() {
-    const searchInput = document.getElementById('searchInput');
-    const keywords = searchInput.value.trim();
-    const searchType = document.querySelector('input[name="searchType"]:checked')?.value || 'keywords';
-    const store = document.querySelector('input[name="store"]:checked')?.value || 'amazon';
+    const keyword = document.getElementById("searchInput").value;
+
+    if (!keyword) {
+        alert("אנא הזן מילות חיפוש");
+        return;
+    }
+
+    // Show loading indicator
+    const loading = document.getElementById("loading");
+    const searchResultsSection = document.getElementById("searchResultsSection");
+    const container = document.getElementById("productsGrid");
     
-    if (!keywords) {
-        alert('אנא הזן מילות חיפוש');
+    if (loading) loading.style.display = "block";
+    if (searchResultsSection) searchResultsSection.style.display = "block";
+    if (container) container.innerHTML = "";
+
+    try {
+        const response = await fetch('/api/search', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                keywords: keyword,
+                store: 'aliexpress',
+                count: 20
+            })
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to fetch products');
+        }
+        
+        renderProducts(data.products || []);
+
+    } catch (error) {
+        console.error("Error fetching products:", error);
+        alert(`שגיאה: ${error.message}`);
+    } finally {
+        // Hide loading indicator
+        if (loading) loading.style.display = "none";
+    }
+}
+
+function renderProducts(products) {
+    // Show search results section
+    const searchResultsSection = document.getElementById("searchResultsSection");
+    if (searchResultsSection) {
+        searchResultsSection.style.display = "block";
+    }
+    
+    const container = document.getElementById("productsGrid");
+    if (!container) {
+        console.error("Products grid container not found");
         return;
     }
     
-    const loading = document.getElementById('loading');
-    const productsGrid = document.getElementById('productsGrid');
-    const searchResultsSection = document.getElementById('searchResultsSection');
-    
-    if (loading) loading.style.display = 'block';
-    if (productsGrid) productsGrid.innerHTML = '';
-    if (searchResultsSection) searchResultsSection.style.display = 'block';
-    
-    // Scroll to search results
-    if (searchResultsSection) {
-        searchResultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    container.innerHTML = "";
+
+    if (products.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 2rem; color: #999;"><i class="fas fa-search" style="font-size: 3rem; margin-bottom: 1rem;"></i><p>לא נמצאו מוצרים</p></div>';
+        return;
     }
-    
-    try {
-        let response;
+
+    products.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "product-card";
+
+        // Extract price value from string like "$123.45"
+        const priceValue = p.price || '$0';
+        const imageUrl = p.image_url || p.image || 'https://via.placeholder.com/300x300?text=No+Image';
         
-        if (searchType === 'url') {
-            response = await fetch('/api/product/url', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url: keywords, store: store })
-            });
-        } else if (searchType === 'category') {
-            response = await fetch('/api/category', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ url: keywords, max_products: 20 })
-            });
-        } else {
-            response = await fetch('/api/search', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ 
-                    keywords: keywords,
-                    store: store,
-                    count: 20
-                })
-            });
-        }
-        
-        const data = await response.json();
-        
-        if (loading) loading.style.display = 'none';
-        
-        if (data.success && data.products) {
-            displayProducts(data.products, productsGrid);
-        } else if (data.product) {
-            // Single product result
-            displayProducts([data.product], productsGrid);
-        } else {
-            if (productsGrid) {
-                productsGrid.innerHTML = '<p style="text-align: center; padding: 2rem;">לא נמצאו מוצרים</p>';
-            }
-        }
-    } catch (error) {
-        console.error('Error searching products:', error);
-        if (loading) loading.style.display = 'none';
-        if (productsGrid) {
-            productsGrid.innerHTML = '<p style="text-align: center; padding: 2rem; color: #dc3545;">שגיאה בחיפוש מוצרים</p>';
-        }
-    }
+        card.innerHTML = `
+            <div class="product-image">
+                <img src="${imageUrl}" alt="${p.title || 'Product'}" onerror="this.src='https://via.placeholder.com/300x300?text=No+Image'">
+                ${p.discount ? `<span class="discount-badge">${p.discount}</span>` : ''}
+            </div>
+            <div class="product-info">
+                <h3 class="product-title">${p.title || 'Untitled Product'}</h3>
+                <div class="product-price">
+                    <span class="current-price">${priceValue}</span>
+                    ${p.original_price ? `<span class="original-price">${p.original_price}</span>` : ''}
+                </div>
+                ${p.rating ? `
+                <div class="product-rating">
+                    <i class="fas fa-star"></i> ${p.rating}
+                    ${p.reviews_count ? `<span>(${p.reviews_count} ביקורות)</span>` : ''}
+                </div>
+                ` : ''}
+                <a href="${p.affiliate_url || '#'}" 
+                   class="btn btn-primary" 
+                   target="_blank" 
+                   rel="nofollow sponsored">
+                    <i class="fas fa-shopping-cart"></i> קנה עכשיו
+                </a>
+            </div>
+        `;
+
+        container.appendChild(card);
+    });
 }
 
 // Generate video for product

@@ -20,7 +20,15 @@ import hmac
 import base64
 from urllib.parse import quote, urlparse, parse_qs
 from bs4 import BeautifulSoup
-import re
+
+
+# Try to import AliExpress API
+try:
+    from aliexpress_api import AliexpressApi, models
+    ALIEXPRESS_API_AVAILABLE = True
+except ImportError:
+    print("[WARNING] aliexpress_api not installed. Install with: pip install aliexpress_api")
+    ALIEXPRESS_API_AVAILABLE = False
 
 load_dotenv()
 
@@ -1232,437 +1240,86 @@ class AliExpressProductFetcher(ProductFetcher):
     
     def __init__(self):
         super().__init__()
-        self.app_key = os.getenv('ALIEXPRESS_APP_KEY')
-        self.app_secret = os.getenv('ALIEXPRESS_APP_SECRET')
-        # AliExpress affiliate tracking parameter
-        self.affiliate_tracking = os.getenv('ALIEXPRESS_AFFILIATE_TRACKING', '')
+        self.app_key = os.getenv('ALIEXPRESS_APP_KEY', '526322')
+        self.app_secret = os.getenv('ALIEXPRESS_APP_SECRET', 'qMAJARlyy0zjzcF62yrvTvTYxwtH9Ix1')
+        self.affiliate_tracking = os.getenv('ALIEXPRESS_AFFILIATE_TRACKING', 'goodsles')
+        self.api = None
+        self.use_api = False
+        
+        # Initialize AliExpress API (required - no fallback)
+        if not ALIEXPRESS_API_AVAILABLE:
+            raise ImportError(
+                "AliExpress API not installed. Install with: "
+                "pip install aliexpress_api"
+            )
+        
+        if not self.app_key or not self.app_secret:
+            raise ValueError(
+                "AliExpress API credentials not configured. "
+                "Set ALIEXPRESS_APP_KEY and ALIEXPRESS_APP_SECRET in .env"
+            )
+        
+        try:
+            self.api = AliexpressApi(
+                self.app_key,
+                self.app_secret,
+                models.Language.EN,
+                models.Currency.USD,
+                self.affiliate_tracking
+            )
+            self.use_api = True
+            print("=" * 70)
+            print("[AliExpress] ✓ API initialized successfully")
+            print(f"  App Key: {self.app_key}")
+            print(f"  Tracking ID: {self.affiliate_tracking}")
+            print("=" * 70)
+        except Exception as e:
+            raise RuntimeError(f"Failed to initialize AliExpress API: {e}")
     
     def search_products(self, keywords: str, max_results: int = 10) -> List[Dict]:
-        """חיפוש מוצרים ב-AliExpress"""
+        """חיפוש מוצרים ב-AliExpress באמצעות API"""
         try:
-            # Use web scraping for AliExpress search
-            search_url = f"https://www.aliexpress.com/wholesale?SearchText={quote(keywords)}"
-            response = self.session.get(search_url, timeout=10)
-            response.raise_for_status()
+            print(f"[API] Searching AliExpress for: {keywords}")
+            response = self.api.get_products(
+                keywords=keywords,
+                page_no=1,
+                page_size=max_results
+            )
             
-            soup = BeautifulSoup(response.content, 'html.parser')
-            products = []
-            
-            # Try to find product cards in search results
-            product_cards = soup.find_all('div', class_=re.compile(r'product-card|item-card|list-item', re.I))
-            
-            if not product_cards:
-                # Fallback: try different selectors
-                product_cards = soup.find_all('a', href=re.compile(r'/item/.*\.html'))
-            
-            for i, card in enumerate(product_cards[:max_results]):
-                try:
-                    product = self._extract_product_from_card(card)
-                    if product:
-                        products.append(product)
-                except Exception as e:
-                    print(f"[!] Error extracting product {i+1}: {e}")
-                    continue
-            
-            if products:
-                return products
+            if response and response.products:
+                print(f"[API] Found {len(response.products)} products")
+                return self._parse_api_products(response.products)
             else:
-                print("[!] No products found via scraping, using mock data")
-                return self._get_mock_products()
-                
+                print("[API] No products found")
+                return []
         except Exception as e:
-            print(f"[X] Error fetching from AliExpress: {e}")
-            return self._get_mock_products()
+            print(f"[API] Error searching products: {e}")
+            raise
     
     def fetch_product_by_url(self, product_url: str) -> Optional[Dict]:
-        """משיכת מוצר לפי URL"""
+        """משיכת מוצר לפי URL - דורש product ID"""
         try:
-            # Clean URL and add affiliate tracking if needed
-            clean_url = self._clean_affiliate_url(product_url)
+            # Extract product ID from URL
+            product_id = self._extract_product_id(product_url)
+            if not product_id:
+                raise ValueError(f"Could not extract product ID from URL: {product_url}")
             
-            print(f"[FETCH] Fetching AliExpress product from: {clean_url}")
+            print(f"[API] Fetching AliExpress product ID: {product_id}")
             
-            # Set better headers for AliExpress
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.9',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'Connection': 'keep-alive',
-                'Upgrade-Insecure-Requests': '1',
-                'Sec-Fetch-Dest': 'document',
-                'Sec-Fetch-Mode': 'navigate',
-                'Sec-Fetch-Site': 'none'
-            }
-            
-            response = self.session.get(clean_url, headers=headers, timeout=15)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Debug: Print page title to verify we got the right page
-            page_title = soup.find('title')
-            if page_title:
-                print(f"[DEBUG] Page title: {page_title.get_text(strip=True)[:100]}")
-            
-            # Extract product information
-            product = self._scrape_aliexpress_product(soup, clean_url)
-            
-            if product:
-                print(f"[OK] Successfully scraped AliExpress product: {product.get('title', 'Unknown')}")
-                print(f"[OK] Price extracted: {product.get('price', 'N/A')}")
-                if not product.get('price') or product.get('price') == '$0':
-                    print("[!] WARNING: Price extraction may have failed. Price is missing or $0.")
-                return product
-            else:
-                print("[!] Failed to extract product data, using fallback")
-                product_id = self._extract_product_id(clean_url)
-                if product_id:
-                    return self._get_mock_product(product_id)
-                return None
+            # Use API to get product details by ID
+            # Note: AliExpress API doesn't have direct product detail endpoint
+            # We need to use get_products with specific filters or use hot products
+            # For now, return error message
+            raise NotImplementedError(
+                "AliExpress API does not support fetching by URL directly. "
+                "Please use search_products() instead or provide product_id for API lookup."
+            )
                 
         except Exception as e:
             print(f"[X] Error fetching AliExpress product: {e}")
-            product_id = self._extract_product_id(product_url)
-            if product_id:
-                return self._get_mock_product(product_id)
-            return None
+            raise
     
-    def _scrape_aliexpress_product(self, soup: BeautifulSoup, url: str) -> Optional[Dict]:
-        """חילוץ מידע מוצר מ-AliExpress"""
-        try:
-            # Extract title
-            title = None
-            title_selectors = [
-                'h1.product-title-text',
-                'h1[data-pl="product-title"]',
-                'h1',
-                '.product-title',
-                'meta[property="og:title"]'
-            ]
-            for selector in title_selectors:
-                element = soup.select_one(selector)
-                if element:
-                    title = element.get_text(strip=True) or element.get('content', '')
-                    if title:
-                        break
-            
-            # Extract price - AliExpress uses various selectors
-            price = None
-            
-            # Method 1: Try common AliExpress price selectors
-            price_selectors = [
-                '.price-current',
-                '.price-current .notranslate',
-                '.price .notranslate',
-                '.product-price-value',
-                '[data-pl="product-price"]',
-                '.price-current-notrans',
-                '.price-current .price',
-                'span.price',
-                '.product-price-current',
-                'meta[property="product:price:amount"]',
-                'meta[property="og:price:amount"]'
-            ]
-            for selector in price_selectors:
-                element = soup.select_one(selector)
-                if element:
-                    price_text = element.get_text(strip=True) or element.get('content', '')
-                    if price_text:
-                        # Extract price value - handle various formats
-                        price_match = re.search(r'([\d,]+\.?\d*)', price_text.replace(',', ''))
-                        if price_match:
-                            price_val = price_match.group(1)
-                            # Check for currency symbol
-                            if '$' in price_text or 'USD' in price_text.upper():
-                                price = f"${price_val}"
-                            elif '€' in price_text or 'EUR' in price_text.upper():
-                                price = f"€{price_val}"
-                            elif '£' in price_text or 'GBP' in price_text.upper():
-                                price = f"£{price_val}"
-                            else:
-                                price = f"${price_val}"  # Default to USD
-                        else:
-                            price = price_text
-                        if price:
-                            break
-            
-            # Method 2: Look for price in script tags (JSON data)
-            if not price:
-                scripts = soup.find_all('script', type='application/json')
-                for script in scripts:
-                    try:
-                        data = json.loads(script.string)
-                        # Search recursively for price
-                        price = self._find_price_in_json(data)
-                        if price:
-                            break
-                    except:
-                        continue
-            
-            # Method 3: Look for price in window.runParams or similar JavaScript variables
-            if not price:
-                scripts = soup.find_all('script')
-                for script in scripts:
-                    if script.string:
-                        # Look for price patterns in JavaScript
-                        price_patterns = [
-                            r'price["\']?\s*[:=]\s*["\']?([\d.]+)',
-                            r'currentPrice["\']?\s*[:=]\s*["\']?([\d.]+)',
-                            r'productPrice["\']?\s*[:=]\s*["\']?([\d.]+)',
-                            r'"price"\s*:\s*"([\d.]+)"',
-                            r'"currentPrice"\s*:\s*"([\d.]+)"'
-                        ]
-                        for pattern in price_patterns:
-                            match = re.search(pattern, script.string, re.IGNORECASE)
-                            if match:
-                                price = f"${match.group(1)}"
-                                break
-                        if price:
-                            break
-            
-            # Method 4: Look for price in data attributes
-            if not price:
-                price_elements = soup.find_all(attrs={'data-pl': re.compile(r'price', re.I)})
-                for elem in price_elements:
-                    price_text = elem.get_text(strip=True)
-                    if price_text:
-                        price_match = re.search(r'([\d.]+)', price_text.replace(',', ''))
-                        if price_match:
-                            price = f"${price_match.group(1)}"
-                            break
-            
-            # Method 5: Look for JSON-LD structured data
-            if not price:
-                json_ld_scripts = soup.find_all('script', type='application/ld+json')
-                for script in json_ld_scripts:
-                    try:
-                        data = json.loads(script.string)
-                        if isinstance(data, dict) and 'offers' in data:
-                            offers = data['offers']
-                            if isinstance(offers, dict) and 'price' in offers:
-                                price_val = offers['price']
-                                if isinstance(price_val, (int, float)):
-                                    price = f"${price_val:.2f}"
-                                elif isinstance(price_val, str):
-                                    price_match = re.search(r'([\d.]+)', price_val.replace(',', ''))
-                                    if price_match:
-                                        price = f"${price_match.group(1)}"
-                                break
-                    except:
-                        continue
-            
-            # Method 6: Look for price in span/div with specific classes used by AliExpress
-            if not price:
-                # AliExpress often uses these patterns
-                price_patterns = [
-                    soup.find('span', class_=re.compile(r'price.*current|current.*price', re.I)),
-                    soup.find('span', class_=re.compile(r'product.*price', re.I)),
-                    soup.find('div', class_=re.compile(r'price.*current|current.*price', re.I)),
-                    soup.find('span', {'id': re.compile(r'price', re.I)}),
-                ]
-                for elem in price_patterns:
-                    if elem:
-                        price_text = elem.get_text(strip=True)
-                        if price_text:
-                            # Remove currency symbols and extract number
-                            price_match = re.search(r'([\d,]+\.?\d*)', price_text.replace(',', ''))
-                            if price_match:
-                                price = f"${price_match.group(1)}"
-                                break
-            
-            # Method 7: Search in all text for price patterns (last resort)
-            if not price:
-                # Look for common price patterns in the page
-                page_text = soup.get_text()
-                # Pattern: $XX.XX or USD XX.XX or just numbers that look like prices
-                price_patterns = [
-                    r'\$\s*(\d+\.?\d*)',
-                    r'USD\s*(\d+\.?\d*)',
-                    r'(\d+\.\d{2})\s*(?:USD|dollars?)',
-                ]
-                for pattern in price_patterns:
-                    matches = re.findall(pattern, page_text, re.IGNORECASE)
-                    if matches:
-                        # Take the first reasonable price (between 0.01 and 10000)
-                        for match in matches:
-                            try:
-                                price_val = float(match)
-                                if 0.01 <= price_val <= 10000:
-                                    price = f"${price_val:.2f}"
-                                    break
-                            except:
-                                continue
-                        if price:
-                            break
-            
-            # Extract original price
-            original_price = None
-            original_price_selectors = [
-                '.price-original',
-                '.price-was',
-                '[data-pl="product-original-price"]'
-            ]
-            for selector in original_price_selectors:
-                element = soup.select_one(selector)
-                if element:
-                    original_price_text = element.get_text(strip=True)
-                    if original_price_text:
-                        price_match = re.search(r'[\d,]+\.?\d*', original_price_text.replace(',', ''))
-                        if price_match:
-                            original_price = f"${price_match.group()}"
-                        break
-            
-            # Extract image
-            image_url = None
-            image_selectors = [
-                'meta[property="og:image"]',
-                '.product-image img',
-                'img[data-pl="product-image"]',
-                '.images-view img'
-            ]
-            for selector in image_selectors:
-                element = soup.select_one(selector)
-                if element:
-                    image_url = element.get('content') or element.get('src') or element.get('data-src')
-                    if image_url and image_url.startswith('http'):
-                        break
-            
-            # Extract rating
-            rating = 0
-            rating_element = soup.select_one('.rating-value, .overview-rating-average, [data-pl="rating"]')
-            if rating_element:
-                rating_text = rating_element.get_text(strip=True)
-                rating_match = re.search(r'(\d+\.?\d*)', rating_text)
-                if rating_match:
-                    rating = float(rating_match.group(1))
-            
-            # Extract reviews count
-            reviews_count = 0
-            reviews_element = soup.select_one('.reviews-count, .review-count, [data-pl="reviews-count"]')
-            if reviews_element:
-                reviews_text = reviews_element.get_text(strip=True)
-                reviews_match = re.search(r'([\d,]+)', reviews_text.replace(',', ''))
-                if reviews_match:
-                    reviews_count = int(reviews_match.group(1).replace(',', ''))
-            
-            # Extract description
-            description = None
-            desc_selectors = [
-                'meta[name="description"]',
-                'meta[property="og:description"]',
-                '.product-description',
-                '.detail-desc'
-            ]
-            for selector in desc_selectors:
-                element = soup.select_one(selector)
-                if element:
-                    description = element.get('content') or element.get_text(strip=True)
-                    if description:
-                        break
-            
-            # Build affiliate URL
-            affiliate_url = self._add_affiliate_tracking(url)
-            
-            # Debug: Print what we found
-            if not price:
-                print("[!] WARNING: Could not extract price using any method")
-                print(f"[DEBUG] Title found: {title is not None}")
-                print(f"[DEBUG] Image found: {image_url is not None}")
-                # Try to find any price-like text in the page for debugging
-                all_text = soup.get_text()[:500]  # First 500 chars
-                print(f"[DEBUG] Sample page text: {all_text[:200]}...")
-            
-            # Build product dictionary
-            product = {
-                'title': title or 'AliExpress Product',
-                'price': price or '$0',
-                'original_price': original_price or '',
-                'discount': '',
-                'image_url': image_url or '',
-                'image_urls': [],
-                'video_url': '',
-                'rating': rating,
-                'reviews_count': reviews_count,
-                'affiliate_url': affiliate_url,
-                'description': description or 'High quality product from AliExpress'
-            }
-            
-            # Calculate discount if both prices exist
-            if original_price and price:
-                try:
-                    orig_val = float(re.search(r'[\d.]+', original_price.replace(',', '')).group())
-                    curr_val = float(re.search(r'[\d.]+', price.replace(',', '')).group())
-                    if orig_val > curr_val:
-                        discount_pct = int(((orig_val - curr_val) / orig_val) * 100)
-                        product['discount'] = f'{discount_pct}%'
-                except:
-                    pass
-            
-            return product
-            
-        except Exception as e:
-            print(f"[!] Error scraping AliExpress product: {e}")
-            return None
-    
-    def _find_price_in_json(self, data, depth=0):
-        """חיפוש מחיר ב-JSON באופן רקורסיבי"""
-        if depth > 5:  # Limit recursion depth
-            return None
-        
-        if isinstance(data, dict):
-            # Check common price keys
-            for key in ['price', 'currentPrice', 'productPrice', 'salePrice', 'amount']:
-                if key in data:
-                    val = data[key]
-                    if isinstance(val, (int, float)):
-                        return f"${val:.2f}"
-                    elif isinstance(val, str):
-                        price_match = re.search(r'([\d.]+)', val.replace(',', ''))
-                        if price_match:
-                            return f"${price_match.group(1)}"
-            
-            # Recursively search in nested dicts
-            for value in data.values():
-                result = self._find_price_in_json(value, depth + 1)
-                if result:
-                    return result
-        elif isinstance(data, list):
-            for item in data:
-                result = self._find_price_in_json(item, depth + 1)
-                if result:
-                    return result
-        
-        return None
-    
-    def _extract_product_from_card(self, card) -> Optional[Dict]:
-        """חילוץ מידע מוצר מכרטיס מוצר בתוצאות חיפוש"""
-        try:
-            # This is a simplified extraction - can be improved
-            title_elem = card.find(['h3', 'h4', 'a'], class_=re.compile(r'title|name', re.I))
-            title = title_elem.get_text(strip=True) if title_elem else None
-            
-            price_elem = card.find(class_=re.compile(r'price', re.I))
-            price = price_elem.get_text(strip=True) if price_elem else None
-            
-            link_elem = card.find('a', href=re.compile(r'/item/'))
-            link = link_elem.get('href') if link_elem else None
-            if link and not link.startswith('http'):
-                link = f"https://www.aliexpress.com{link}"
-            
-            if title and link:
-                return {
-                    'title': title,
-                    'price': price or '$0',
-                    'affiliate_url': self._add_affiliate_tracking(link) if link else '',
-                    'image_url': '',
-                    'rating': 0,
-                    'reviews_count': 0,
-                    'description': ''
-                }
-        except:
-            pass
-        return None
+
     
     def _extract_product_id(self, url: str) -> Optional[str]:
         """חילוץ ID מוצר מ-URL של AliExpress"""
@@ -1672,22 +1329,7 @@ class AliExpressProductFetcher(ProductFetcher):
             return match.group(1)
         return None
     
-    def _clean_affiliate_url(self, url: str) -> str:
-        """ניקוי URL מקישור שותפים"""
-        # Remove affiliate tracking parameters but keep product ID
-        parsed = urlparse(url)
-        # Keep only essential query parameters
-        clean_params = {}
-        for key, value in parse_qs(parsed.query).items():
-            if key.lower() in ['spm', 'aff_platform', 'aff_trace_key']:
-                clean_params[key] = value[0]
-        
-        clean_query = '&'.join([f"{k}={v}" for k, v in clean_params.items()])
-        clean_url = f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
-        if clean_query:
-            clean_url += f"?{clean_query}"
-        
-        return clean_url
+
     
     def _add_affiliate_tracking(self, url: str) -> str:
         """הוספת פרמטר שותפים ל-URL"""
@@ -1702,35 +1344,59 @@ class AliExpressProductFetcher(ProductFetcher):
         query = '&'.join([f"{k}={v[0]}" for k, v in params.items()])
         return f"{parsed.scheme}://{parsed.netloc}{parsed.path}?{query}"
     
-    def _get_mock_products(self) -> List[Dict]:
-        """נתוני דמה לבדיקה"""
-        return [
-            {
-                'title': 'מוצר מיוחד מ-AliExpress',
-                'price': '₪89',
-                'original_price': '₪129',
-                'discount': '31%',
-                'image_url': 'https://via.placeholder.com/800x800?text=AliExpress+Product',
-                'rating': 4.3,
-                'reviews_count': 2345,
-                'affiliate_url': 'https://aliexpress.com/item/EXAMPLE789',
-                'description': 'משלוח מהיר ואיכות מעולה'
-            }
-        ]
+    def _parse_api_products(self, products) -> List[Dict]:
+        """המרת מוצרים מ-API לפורמט הפנימי שלנו"""
+        parsed = []
+        
+        for product in products:
+            try:
+                # Extract price - handle both string and float
+                price = product.sale_price if hasattr(product, 'sale_price') else product.target_sale_price
+                if isinstance(price, str):
+                    price = f"${price}"
+                elif isinstance(price, (int, float)):
+                    price = f"${price:.2f}"
+                else:
+                    price = "$0"
+                
+                # Extract original price if exists
+                original_price = ""
+                if hasattr(product, 'original_price') and product.original_price:
+                    orig = product.original_price
+                    if isinstance(orig, str):
+                        original_price = f"${orig}"
+                    elif isinstance(orig, (int, float)):
+                        original_price = f"${orig:.2f}"
+                
+                # Calculate discount
+                discount = ""
+                if hasattr(product, 'discount') and product.discount:
+                    discount = product.discount
+                
+                parsed_product = {
+                    'title': product.product_title if hasattr(product, 'product_title') else 'AliExpress Product',
+                    'price': price,
+                    'original_price': original_price,
+                    'discount': discount,
+                    'image_url': product.product_main_image_url if hasattr(product, 'product_main_image_url') else '',
+                    'image_urls': [],
+                    'video_url': '',
+                    'rating': 0,
+                    'reviews_count': 0,
+                    'affiliate_url': product.product_detail_url if hasattr(product, 'product_detail_url') else '',
+                    'description': product.product_title if hasattr(product, 'product_title') else '',
+                    'product_id': product.product_id if hasattr(product, 'product_id') else ''
+                }
+                
+                parsed.append(parsed_product)
+                
+            except Exception as e:
+                print(f"[API] Error parsing product: {e}")
+                continue
+        
+        return parsed
     
-    def _get_mock_product(self, product_id: str) -> Dict:
-        """מוצר דמה בודד"""
-        return {
-            'title': f'מוצר AliExpress {product_id}',
-            'price': '₪79',
-            'original_price': '₪119',
-            'discount': '34%',
-            'image_url': 'https://via.placeholder.com/800x800?text=AliExpress',
-            'rating': 4.4,
-            'reviews_count': 1567,
-            'affiliate_url': f'https://aliexpress.com/item/{product_id}',
-            'description': 'איכות מעולה במחיר מצוין'
-        }
+
 
 
 class eBayProductFetcher(ProductFetcher):

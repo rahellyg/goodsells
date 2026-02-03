@@ -1,79 +1,80 @@
+#!/usr/bin/env python3
 """
-סקריפט בדיקה להוספת מוצר דרך קישור שותפים
-Test script for adding product via affiliate link
+בדיקה - איך נראה ה-affiliate link?
 """
-# -*- coding: utf-8 -*-
-import sys
-import os
-
-# Set UTF-8 encoding for Windows
-if sys.platform == 'win32':
-    os.system('chcp 65001 >nul 2>&1')
-
 from product_fetcher import get_fetcher
+import json
 
+print("\n" + "=" * 70)
+print("🔗 בדיקת Affiliate Links - AliExpress")
+print("=" * 70)
+print()
 
-def test_affiliate_link(affiliate_url: str):
-    """בדיקת חילוץ מוצר מקישור שותפים"""
-    print("=" * 60)
-    print("Affiliate Link Test")
-    print("=" * 60)
-    print(f"\n[AFFILIATE LINK] {affiliate_url}\n")
+# צור fetcher
+fetcher = get_fetcher('aliexpress')
+
+print("📋 מידע על ה-fetcher:")
+print(f"   App Key: {fetcher.app_key}")
+print(f"   App Secret: {'✓' if fetcher.app_secret else '✗'}")
+print(f"   Affiliate Tracking: {fetcher.affiliate_tracking if fetcher.affiliate_tracking else '(לא מוגדר)'}")
+print()
+
+# דוגמה של URL מוצר
+product_url = "https://www.aliexpress.com/item/1005003457890123.html"
+print(f"🔍 URL מקורי של מוצר:")
+print(f"   {product_url}")
+print()
+
+# נסה למשוך את המוצר
+print("📦 מושך מידע על המוצר...")
+product = fetcher.fetch_product_by_url(product_url)
+
+if product:
+    print()
+    print("=" * 70)
+    print("✅ המוצר נמשך! הנה ה-affiliate link:")
+    print("=" * 70)
+    print()
     
-    # Get fetcher
-    fetcher = get_fetcher('amazon')
+    affiliate_url = product.get('affiliate_url') or product.get('url', '')
     
-    try:
-        # Fetch product using affiliate link
-        print("[FETCH] Fetching product from affiliate link...")
-        product = fetcher.fetch_product_by_url(affiliate_url)
-        
-        if product:
-            print("\n" + "=" * 60)
-            print("PRODUCT EXTRACTED SUCCESSFULLY")
-            print("=" * 60)
-            print(f"\n📦 Title: {product.get('title', 'N/A')}")
-            print(f"💰 Price: {product.get('price', 'N/A')}")
-            
-            if product.get('original_price'):
-                print(f"💵 Original Price: {product.get('original_price')}")
-            
-            if product.get('discount'):
-                print(f"🎯 Discount: {product.get('discount')}")
-            
-            print(f"⭐ Rating: {product.get('rating', 0)}")
-            print(f"📝 Reviews: {product.get('reviews_count', 0)}")
-            
-            if product.get('affiliate_url'):
-                print(f"\n🔗 New Affiliate URL (with your tag):")
-                print(f"   {product.get('affiliate_url')}")
-            
-            if product.get('video_url'):
-                print(f"\n🎬 Product Video URL:")
-                print(f"   {product.get('video_url')}")
-            
-            print("\n" + "=" * 60)
-            print("[OK] Product extracted successfully from affiliate link!")
-            print("=" * 60)
-            
-            return product
+    print(f"🔗 Affiliate URL (זה מה שהלקוח לוחץ עליו):")
+    print(f"   {affiliate_url}")
+    print()
+    
+    # בדוק אם יש tracking parameters
+    if 'aff_trace_key' in affiliate_url or 'aff_platform' in affiliate_url:
+        print("✅ ה-URL כולל tracking parameters - תקבל commission!")
+    elif fetcher.app_key in affiliate_url or 'tag=' in affiliate_url:
+        print("✅ ה-URL כולל את ה-affiliate tag שלך - תקבל commission!")
+    else:
+        print("⚠️  ה-URL לא כולל tracking - צריך להוסיף ALIEXPRESS_AFFILIATE_TRACKING ל-.env")
+    
+    print()
+    print("📊 כל השדות של המוצר:")
+    print("-" * 70)
+    for key, value in product.items():
+        if key == 'description':
+            print(f"   {key}: {str(value)[:50]}...")
         else:
-            print("\n[X] Failed to extract product from affiliate link")
-            return None
-    
-    except Exception as e:
-        print(f"\n[X] Error: {e}")
-        import traceback
-        traceback.print_exc()
-        return None
+            print(f"   {key}: {value}")
 
+print()
+print("=" * 70)
+print("💡 איך זה עובד:")
+print("=" * 70)
+print("""
+1. המערכת מושכת את המוצר מ-AliExpress
+2. אם יש ALIEXPRESS_AFFILIATE_TRACKING ב-.env - הוא מוסיף אותו ל-URL
+3. כשלקוח לוחץ על "קנה עכשיו" - הוא עובר ל-AliExpress עם ה-tracking שלך
+4. AliExpress רואה את ה-tracking ID ושולח לך callback כשיש מכירה
+5. אתה מקבל commission! 💰
 
-if __name__ == '__main__':
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Test affiliate link extraction')
-    parser.add_argument('url', help='Affiliate link URL to test')
-    
-    args = parser.parse_args()
-    
-    test_affiliate_link(args.url)
+⚠️  כרגע: המערכת לא משתמשת ב-API אלא ב-web scraping
+   זה אומר: ה-URL הוא פשוט קישור ישיר ל-AliExpress
+   
+   כדי לקבל commissions צריך להוסיף:
+   ALIEXPRESS_AFFILIATE_TRACKING=your_tracking_id
+""")
+print("=" * 70)
+print()
