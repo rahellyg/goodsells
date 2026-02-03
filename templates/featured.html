@@ -36,27 +36,18 @@
         <section class="featured-section">
             <div class="container">
                 <!-- Smart Agent Section -->
-                <div class="smart-agent-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2rem; border-radius: 10px; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
-                    <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;">
-                        <div>
-                            <h2 style="margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-robot"></i> סוכן חכם למוצרים מומלצים
+                <div class="smart-agent-section" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 2.5rem; border-radius: 10px; margin-bottom: 2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: center;">
+                    <div style="max-width: 600px; margin: 0 auto;">
+                        <div style="margin-bottom: 1.5rem;">
+                            <i class="fas fa-robot" style="font-size: 3rem; margin-bottom: 1rem;"></i>
+                            <h2 style="margin: 0 0 0.5rem 0; font-size: 2rem;">
+                                מוצרים מומלצים לתוכנית השותפים
                             </h2>
-                            <p style="margin: 0; opacity: 0.9;">הסוכן שלנו ימצא עבורך מוצרים עם עמלות מעולות ומחירים משתלמים</p>
+                            <p style="margin: 0; opacity: 0.9; font-size: 1.1rem;">הסוכן שלנו ימצא עבורך את 50 המוצרים הכי מומלצים עם העמלות הטובות ביותר</p>
                         </div>
-                        <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-                            <select id="categorySelect" style="padding: 0.75rem 1rem; border-radius: 5px; border: none; font-size: 1rem;">
-                                <option value="electronics">אלקטרוניקה</option>
-                                <option value="fashion">אופנה ואקססוריז</option>
-                                <option value="home">בית ומטבח</option>
-                                <option value="sports">ספורט וכושר</option>
-                                <option value="beauty">יופי וטיפוח</option>
-                                <option value="toys">צעצועים ומשחקים</option>
-                            </select>
-                            <button onclick="loadSmartRecommendations()" class="btn" style="background: white; color: #667eea; padding: 0.75rem 1.5rem; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 0.5rem;">
-                                <i class="fas fa-magic"></i> מצא מוצרים מומלצים
-                            </button>
-                        </div>
+                        <button onclick="loadSmartRecommendations()" class="btn" style="background: white; color: #667eea; padding: 1rem 2.5rem; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 1.2rem; box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            <i class="fas fa-star"></i> הראה מומלצים
+                        </button>
                     </div>
                 </div>
 

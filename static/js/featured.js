@@ -19,12 +19,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 /**
  * Load smart recommendations from AI agent
+ * Gets top 50 recommended products for affiliate program
  */
 async function loadSmartRecommendations() {
     const loading = document.getElementById('loading');
     const grid = document.getElementById('featuredProductsGrid');
     const noProducts = document.getElementById('noProducts');
-    const category = document.getElementById('categorySelect').value;
     
     loading.style.display = 'block';
     grid.innerHTML = '';
@@ -38,8 +38,7 @@ async function loadSmartRecommendations() {
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                category: category,
-                count: 20
+                count: 50
             })
         });
         
@@ -52,10 +51,10 @@ async function loadSmartRecommendations() {
             updateStats();
             
             // Show success message
-            showNotification(`✨ נמצאו ${data.products.length} מוצרים מומלצים בקטגוריה ${getCategoryName(category)}!`, 'success');
+            showNotification(`✨ נמצאו ${data.products.length} מוצרים מומלצים לתוכנית השותפים!`, 'success');
         } else {
             noProducts.style.display = 'block';
-            showNotification('לא נמצאו מוצרים מומלצים. נסה קטגוריה אחרת.', 'warning');
+            showNotification('לא נמצאו מוצרים מומלצים. נסה שוב מאוחר יותר.', 'warning');
         }
     } catch (error) {
         console.error('Error loading smart recommendations:', error);

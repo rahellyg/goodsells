@@ -312,38 +312,39 @@ def get_category_products():
 
 @app.route('/api/products/recommended', methods=['POST'])
 def get_recommended_products():
-    """Get smart recommended products with good commissions from AliExpress"""
+    """Get top 50 recommended products with best commissions from AliExpress"""
     try:
         data = request.json or {}
-        category = data.get('category', 'electronics')
-        count = min(int(data.get('count', 20)), 50)
+        count = min(int(data.get('count', 50)), 50)
         
-        print(f"[SMART AGENT] Searching for recommended {category} products...")
+        print(f"[SMART AGENT] Searching for top {count} recommended products for affiliate program...")
         
-        # Keywords for different categories with high commission potential
-        category_keywords = {
-            'electronics': ['wireless earbuds', 'smart watch', 'phone accessories', 'bluetooth speaker'],
-            'fashion': ['sunglasses', 'jewelry', 'watch', 'bag'],
-            'home': ['led lights', 'kitchen gadgets', 'home decor', 'organizer'],
-            'sports': ['fitness tracker', 'yoga mat', 'sports bottle', 'resistance bands'],
-            'beauty': ['makeup brush', 'skincare', 'hair accessories', 'nail art'],
-            'toys': ['educational toys', 'puzzle', 'building blocks', 'remote control'],
-        }
-        
-        keywords_list = category_keywords.get(category, ['popular items', 'trending', 'best seller'])
+        # High-commission keywords across various categories
+        high_value_keywords = [
+            'wireless earbuds',
+            'smart watch', 
+            'phone accessories',
+            'bluetooth speaker',
+            'led lights',
+            'kitchen gadgets',
+            'fitness tracker',
+            'sunglasses',
+            'jewelry',
+            'home decor'
+        ]
         
         # Use AliExpress API to get products
         try:
             fetcher = get_fetcher('aliexpress')
             all_products = []
             
-            # Search multiple keywords to get variety
-            for keyword in keywords_list[:2]:  # Limit to 2 keywords to avoid API limits
+            # Search multiple high-value keywords to get variety
+            for keyword in high_value_keywords[:5]:  # Search top 5 keywords
                 print(f"[SMART AGENT] Searching: {keyword}")
-                products = fetcher.search_products(keyword, max_results=count // 2)
+                products = fetcher.search_products(keyword, max_results=10)
                 all_products.extend(products)
             
-            # Smart filtering: prefer products with good metrics
+            # Smart filtering: prefer products with best affiliate potential
             scored_products = []
             for product in all_products:
                 score = 0
@@ -355,16 +356,18 @@ def get_recommended_products():
                 except:
                     price = 0
                 
-                # Scoring logic for commission potential
-                # 1. Price range (sweet spot: $10-$100)
-                if 10 <= price <= 100:
+                # Scoring logic optimized for commission potential
+                # 1. Price range (sweet spot: $15-$80 for best commission/conversion)
+                if 15 <= price <= 80:
+                    score += 40
+                elif 10 <= price < 15 or 80 < price <= 150:
                     score += 30
-                elif 5 <= price < 10 or 100 < price <= 200:
+                elif 5 <= price < 10 or 150 < price <= 300:
                     score += 20
-                elif price > 200:
+                elif price > 300:
                     score += 10
                 
-                # 2. Discount (higher discount = better deal)
+                # 2. Discount (higher discount = better conversion)
                 discount_str = product.get('discount', '0%')
                 try:
                     discount = int(discount_str.replace('%', ''))
@@ -374,10 +377,14 @@ def get_recommended_products():
                 
                 # 3. Has image (quality indicator)
                 if product.get('image_url'):
-                    score += 10
+                    score += 15
                 
-                # 4. Has original price (shows deal)
-                if product.get('original_price'):
+                # 4. Has original price (shows it's a deal)
+                if product.get('original_price') and product.get('original_price') != product.get('price'):
+                    score += 15
+                
+                # 5. Reasonable price (exclude extremely cheap or expensive items)
+                if 5 <= price <= 500:
                     score += 10
                 
                 scored_products.append({
@@ -385,19 +392,18 @@ def get_recommended_products():
                     'score': score
                 })
             
-            # Sort by score
+            # Sort by score (highest commission potential first)
             scored_products.sort(key=lambda x: x['score'], reverse=True)
             
             # Return top products
             recommended = [item['product'] for item in scored_products[:count]]
             
-            print(f"[SMART AGENT] Found {len(recommended)} recommended products")
+            print(f"[SMART AGENT] Found {len(recommended)} top recommended products for affiliate program")
             
             return jsonify({
                 'success': True,
                 'products': recommended,
-                'count': len(recommended),
-                'category': category
+                'count': len(recommended)
             })
             
         except Exception as api_error:
