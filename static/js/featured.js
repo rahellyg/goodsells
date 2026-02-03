@@ -389,3 +389,79 @@ function logCommission(event, product) {
     console.log(url);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
+
+/**
+ * Generate video from the first recommended product
+ */
+async function generateVideoFromFirstProduct() {
+    if (!allProducts || allProducts.length === 0) {
+        showNotification('אין מוצרים מומלצים. לחץ על "הראה מומלצים" תחילה.', 'warning');
+        return;
+    }
+    
+    const firstProduct = allProducts[0];
+    
+    // Show loading notification
+    showNotification('🎬 יוצר סרטון שיווק ל-' + (firstProduct.title || 'מוצר מומלץ') + '...', 'info');
+    
+    try {
+        const response = await fetch('/api/video/generate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                title: firstProduct.title || 'Amazing Product',
+                product: firstProduct
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            const videoId = data.video_id;
+            showNotification('✅ הסרטון נוצר בהצלחה! מוריד...', 'success');
+            
+            // Check video status and download when ready
+            checkVideoStatus(videoId);
+        } else {
+            showNotification('❌ שגיאה ביצירת סרטון: ' + (data.error || 'Unknown error'), 'error');
+        }
+    } catch (error) {
+        console.error('Error generating video:', error);
+        showNotification('❌ שגיאה ביצירת סרטון: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Check video generation status
+ */
+async function checkVideoStatus(videoId) {
+    const maxAttempts = 60; // 5 minutes max
+    let attempts = 0;
+    
+    const checkInterval = setInterval(async () => {
+        attempts++;
+        
+        try {
+            const response = await fetch(`/api/video/status/${videoId}`);
+            const status = await response.json();
+            
+            if (status.status === 'completed') {
+                clearInterval(checkInterval);
+                showNotification('🎉 סרטון מוכן! מוריד...', 'success');
+                
+                // Download the video
+                window.open(`/api/video/download/${videoId}`, '_blank');
+            } else if (status.status === 'failed') {
+                clearInterval(checkInterval);
+                showNotification('❌ יצירת הסרטון נכשלה: ' + (status.error || 'Unknown error'), 'error');
+            } else if (attempts >= maxAttempts) {
+                clearInterval(checkInterval);
+                showNotification('⏰ זמן יצירת הסרטון פג. נסה שוב מאוחר יותר.', 'warning');
+            }
+        } catch (error) {
+            console.error('Error checking video status:', error);
+        }
+    }, 5000); // Check every 5 seconds
+}

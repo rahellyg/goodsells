@@ -4,7 +4,7 @@ Flask Web Application for Amazon Affiliate Product Showcase
 # -*- coding: utf-8 -*-
 import os
 import sys
-from flask import Flask, render_template, request, jsonify, send_from_directory, url_for
+from flask import Flask, render_template, request, jsonify, send_from_directory, send_file, url_for
 from flask_cors import CORS
 from product_fetcher import get_fetcher
 
@@ -255,6 +255,27 @@ def video_status_check(video_id):
     """Check video generation status"""
     status = video_status.get(video_id, {'status': 'not_found'})
     return jsonify(status)
+
+
+@app.route('/api/video/download/<video_id>')
+def download_video(video_id):
+    """Download generated video"""
+    try:
+        status = video_status.get(video_id)
+        if not status:
+            return jsonify({'error': 'Video not found'}), 404
+        
+        if status['status'] != 'completed':
+            return jsonify({'error': 'Video not ready yet'}), 400
+        
+        video_path = status.get('path')
+        if not video_path or not os.path.exists(video_path):
+            return jsonify({'error': 'Video file not found'}), 404
+        
+        filename = status.get('filename', 'video.mp4')
+        return send_file(video_path, as_attachment=True, download_name=filename, mimetype='video/mp4')
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/api/videos')
