@@ -108,7 +108,7 @@ function createProductCard(product) {
                 </div>
             ` : ''}
             <div class="product-actions">
-                <a href="${affiliateUrl}" target="_blank" class="btn btn-success" style="flex: 1; text-align: center; text-decoration: none;">
+                <a href="${affiliateUrl}" target="_blank" class="btn btn-success" onclick="logCommission(event, ${JSON.stringify(product).replace(/"/g, '&quot;')})" style="flex: 1; text-align: center; text-decoration: none;">
                     <i class="fas fa-shopping-cart"></i> קנה עכשיו
                 </a>
                 <button onclick="generateVideo('${title}', ${JSON.stringify(product).replace(/'/g, "&#39;")})" class="btn btn-secondary">
@@ -321,4 +321,43 @@ async function checkVideoStatus(videoId) {
             console.error('Error checking video status:', error);
         }
     }, 5000); // Check every 5 seconds
+}
+
+/**
+ * Log commission information when clicking on a product
+ */
+function logCommission(event, product) {
+    // Calculate commission based on store and price
+    const price = parseFloat((product.price || product.amazon_original_price || '0').replace(/[^\d.]/g, ''));
+    const url = product.affiliate_url || '';
+    
+    let commissionRate = 0;
+    let store = 'Unknown';
+    
+    if (url.includes('amazon.com')) {
+        commissionRate = 3; // Amazon typical rate is 1-10% depending on category, avg ~3%
+        store = 'Amazon';
+    } else if (url.includes('aliexpress.com')) {
+        commissionRate = 8; // AliExpress typical rate is 5-12%, avg ~8%
+        store = 'AliExpress';
+    }
+    
+    const commissionAmount = (price * commissionRate / 100).toFixed(2);
+    
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('🎯 AFFILIATE COMMISSION INFO');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`📦 Product: ${product.title || 'N/A'}`);
+    console.log(`🏪 Store: ${store}`);
+    console.log(`💰 Price: $${price.toFixed(2)}`);
+    console.log(`📊 Commission Rate: ${commissionRate}%`);
+    console.log(`✅ Estimated Commission: $${commissionAmount}`);
+    
+    if (commissionRate > 0) {
+        console.log(`💵 You WILL receive a commission!`);
+    } else {
+        console.log(`⚠️ No commission available (unknown store)`);
+    }
+    
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
