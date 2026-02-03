@@ -333,13 +333,25 @@ function logCommission(event, product) {
     
     let commissionRate = 0;
     let store = 'Unknown';
+    let affiliateId = 'NOT FOUND';
+    let hasAffiliateId = false;
     
     if (url.includes('amazon.com')) {
-        commissionRate = 3; // Amazon typical rate is 1-10% depending on category, avg ~3%
+        commissionRate = 3;
         store = 'Amazon';
+        const tagMatch = url.match(/[?&]tag=([^&]+)/);
+        if (tagMatch) {
+            affiliateId = decodeURIComponent(tagMatch[1]);
+            hasAffiliateId = true;
+        }
     } else if (url.includes('aliexpress.com')) {
-        commissionRate = 8; // AliExpress typical rate is 5-12%, avg ~8%
+        commissionRate = 8;
         store = 'AliExpress';
+        const trackingMatch = url.match(/[?&]aff_trace_key=([^&]+)/);
+        if (trackingMatch) {
+            affiliateId = decodeURIComponent(trackingMatch[1]);
+            hasAffiliateId = true;
+        }
     }
     
     const commissionAmount = (price * commissionRate / 100).toFixed(2);
@@ -352,12 +364,26 @@ function logCommission(event, product) {
     console.log(`💰 Price: $${price.toFixed(2)}`);
     console.log(`📊 Commission Rate: ${commissionRate}%`);
     console.log(`✅ Estimated Commission: $${commissionAmount}`);
+    console.log('');
+    console.log('🔑 AFFILIATE ID CHECK:');
     
-    if (commissionRate > 0) {
-        console.log(`💵 You WILL receive a commission!`);
+    if (hasAffiliateId) {
+        console.log(`✅ Affiliate ID Found: ${affiliateId}`);
+        console.log(`💵 You WILL receive commission when user buys!`);
+        console.log(`🔗 URL contains your tracking ID`);
     } else {
-        console.log(`⚠️ No commission available (unknown store)`);
+        console.log(`❌ NO Affiliate ID Found!`);
+        console.log(`⚠️ You will NOT receive commission!`);
+        console.log(`🔧 Check your .env file and make sure:`);
+        if (store === 'Amazon') {
+            console.log(`   AMAZON_ASSOCIATE_TAG is set correctly`);
+        } else if (store === 'AliExpress') {
+            console.log(`   ALIEXPRESS_AFFILIATE_TRACKING is set correctly`);
+        }
     }
     
+    console.log('');
+    console.log('📋 Full URL:');
+    console.log(url);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 }
