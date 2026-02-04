@@ -1,6 +1,22 @@
 {
-  "last_updated": "2026-02-03T18:30:00.000000",
+  "last_updated": "2026-02-04T00:00:00.000000",
   "products": [
+    {
+      "title": "AliExpress Product - ID: 1005007793256645",
+      "price": "$19.99",
+      "original_price": "",
+      "discount": "",
+      "image_url": "https://ae01.alicdn.com/kf/S8c5e5b5e5c5e5c5e5c5e5c5e5c5e5c5e5c5e5c5e.jpg",
+      "image_urls": [],
+      "video_url": "",
+      "rating": 0,
+      "reviews_count": 0,
+      "affiliate_url": "https://s.click.aliexpress.com/e/_c3MdnUeP",
+      "description": "AliExpress affiliate product",
+      "added_at": "2026-02-04T00:00:00.000000",
+      "updated_at": "2026-02-04T00:00:00.000000",
+      "store": "aliexpress"
+    },
     {
       "title": "ProCase 2 Pack Screen Protector for Lenovo Tab 10.1 Inch 2025 TB311FU/TB311XU, Tempered Glass Film Guard for Lenovo Tab 10.1\" 2025 Release",
       "price": "$9",
