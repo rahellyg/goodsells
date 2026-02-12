@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-02-04T00:00:00.000000",
+  "last_updated": "2026-02-12T00:00:00.000000",
   "products": [
     {
       "title": "AliExpress Product - ID: 1005007793256645",
@@ -16,6 +16,25 @@
       "added_at": "2026-02-04T00:00:00.000000",
       "updated_at": "2026-02-04T00:00:00.000000",
       "store": "aliexpress"
+    },
+    {
+      "title": "Jongens K-pop Sweatshirt Mode Vest Joggingbroek Meisjes Hip Hop Joggers Broek Kostuums Kind Streetwear Kids Jazzdans Kleding Sets - AliExpress 1501",
+      "price": "$0.00",
+      "original_price": "",
+      "discount": "",
+      "image_url": "https://ae01.alicdn.com/kf/Sd82b887cf6ae446d9d3672b18ce537a6V.jpg",
+      "image_urls": [
+        "https://ae01.alicdn.com/kf/Sd82b887cf6ae446d9d3672b18ce537a6V.jpg"
+      ],
+      "video_url": "",
+      "rating": 0,
+      "reviews_count": 0,
+      "affiliate_url": "https://s.click.aliexpress.com/e/_c3VJV1Yj",
+      "description": "Jongens K-pop Sweatshirt Mode Vest Joggingbroek Meisjes Hip Hop Joggers Broek Kostuums Kind Streetwear Kids Jazzdans Kleding Sets",
+      "added_at": "2026-02-12T00:00:00.000000",
+      "updated_at": "2026-02-12T00:00:00.000000",
+      "store": "aliexpress",
+      "product_id": "1005008177427851"
     },
     {
       "title": "ProCase 2 Pack Screen Protector for Lenovo Tab 10.1 Inch 2025 TB311FU/TB311XU, Tempered Glass Film Guard for Lenovo Tab 10.1\" 2025 Release",
